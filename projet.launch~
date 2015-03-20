@@ -1,0 +1,31 @@
+<launch>
+
+    <node
+        pkg="projet_rob4"
+        type="calculateur.py"
+        name="calculateur" >
+    </node>
+    
+    <node
+        pkg="projet_rob4"
+        type="afficheur.py"
+        name="afficheur" >
+    </node>
+    
+    <node
+        pkg="projet_rob4"
+        type="interpreteur.py"
+        name="interpreteur"
+        output="screen"
+        launch-prefix="xterm -e">
+    </node>
+    
+    <node 
+        pkg="projet_rob4"
+        type="commande_clavier.py"
+        name="commande_clavier" >
+        output="screen"
+        launch-prefix="xterm -e">
+    </node>
+
+</launch>
