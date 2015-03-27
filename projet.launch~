@@ -1,6 +1,22 @@
 <launch>
 
     <node
+        pkg="baxter_tools"
+        type="enable_robot.py"
+        name="activation_robot" 
+        args="-e" >
+    </node>
+
+<!--
+    <node 
+        pkg="baxter_tools"
+        type="tuck_arms.py"
+        name="deploiement_bras"
+        args="-u" >
+    </node>
+-->
+
+    <node
         pkg="projet_rob4"
         type="calculateur.py"
         name="calculateur" >
@@ -8,16 +24,22 @@
     
     <node
         pkg="projet_rob4"
+        type="extinction_sonar.py"
+        name="extinction_sonar" >
+    </node>
+    
+    <node
+        pkg="projet_rob4"
         type="afficheur.py"
-        name="afficheur" >
+        name="afficheur"
+        output="screen" >
     </node>
     
     <node
         pkg="projet_rob4"
         type="interpreteur.py"
         name="interpreteur"
-        output="screen"
-        launch-prefix="xterm -e">
+        output="screen" >
     </node>
     
     <node 
@@ -25,7 +47,7 @@
         type="commande_clavier.py"
         name="commande_clavier" >
         output="screen"
-        launch-prefix="xterm -e">
+        launch-prefix="gnome-terminal -command">
     </node>
 
 </launch>
