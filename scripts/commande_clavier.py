@@ -10,18 +10,17 @@ from utils import *
 
 from std_msgs.msg import String
 
-# A changer
+# TODO A changer
 from test_rob4.msg import Deplacement
 
-clavier_bindings = {
-	'z': ( [ 0, -1 ] ),
-	's': ( [ 0, 1 ] ),
-	'q': ( [ 1, +1 ] ),
-	'd': ( [ 1, -1 ] ),
-	'+': ( [ 2, +1 ] ), # IN
-	'-': ( [ 2, -4 ] )  # OUT
+clavier_deplacement_bindings = {
+    'z': ( CMD_UP ),
+    's': ( CMD_DOWN ),
+    'q': ( CMD_LEFT ), 
+    'd': ( CMD_RIGHT ),
+    '+': ( CMD_IN ),
+    '-': ( CMD_OUT ),
 }
-
 
 def main():
 
@@ -29,7 +28,7 @@ def main():
 
     def usage():
 
-	    output ( "Dplcmnts[ZQSD+-], [R]églages, Quitter[Esc], Stop[autres]" )
+        output ( "Dplcmnts[ZQSD+-], [R]églages, Quitter[Esc], Stop[autres]" )
 
     def boucle():
 
@@ -37,17 +36,14 @@ def main():
 
         while not done and not rospy.is_shutdown():
             c = baxter_external_devices.getch()
-            if c:                
+            if c:
+                
+                output_msg = ""
+                                
                 # Déplacements
-                if c in clavier_bindings:
-
-                    parametres = clavier_bindings [ c ]
-                    output_msg = "%c: selection de l'axe %d, sens %d" % ( c, parametres[ 0 ], parametres[ 1 ] )
-                    deplacement_message = Deplacement ()
-                    deplacement_message.axe = parametres[ 0 ]
-                    deplacement_message.sens = parametres[ 1 ]
-                    cmd_pub.publish ( deplacement_message )
-                    output ( output_msg )
+                if c in clavier_deplacement_bindings:
+                   
+                    output_msg = String ( clavier_deplacement_bindings[ c ] )
 
                 # Réglages
                 
@@ -58,11 +54,15 @@ def main():
                 # Stop
                 else:
                     usage()
+                    output_msg = String ( CMD_STOP )
+                    
+                intr_pub.publish ( output_msg )
+
 
 
     rospy.init_node('interpreteur_clavier')
 
-    cmd_pub = rospy.Publisher( 'api_rob4/commande', Deplacement )
+    intr_pub = rospy.Publisher ( TOPIC_CMD_TXT, String )
 
 
     usage()

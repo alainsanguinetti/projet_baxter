@@ -6,104 +6,27 @@ import rospy
 import baxter_interface
 import baxter_external_devices
 import numpy as np
-import ik_command
 
 import sys
 
-from utils import *
-
 from math import pi
 
-from cgkit.cgtypes      import * # Pour les quaternions
+from cgkit.cgtypes      import * # Pour les quaternions et vec3
 from test_rob4.msg      import Deplacement
 from geometry_msgs.msg  import Point
 from geometry_msgs.msg  import Pose
 from geometry_msgs.msg  import Quaternion
 
-DEPLACEMENT = 0.5; # en CM, incrément de chaque déplacement
-DEPLACEMENT = DEPLACEMENT * 0.01
+# Nos librairies et fonctions de configuration
+from utils import *	
+from chaines import *
+from valeurs import *
+
 
 ctr_trocart = Point ()  # Variables globales
 trocartIsSet = False
 rpr_outil = Pose ()
 limb = ''
-
-# Les quat de cgtype sont dans l'ordre w, x, y, z
-# les quats ROS sont dans l'ordre x, y, z, w
-def quatFromOrientation ( orientation ):
-
-    return quat ( orientation.w,
-                  orientation.x,
-                  orientation.y,
-                  orientation.z )
-
-# L'inverse de la fonction quatFromOrientation
-def ecrirePose ( quat_souhaite ):
-
-    mat_quaternion = np.zeros ( 7 )
-
-    mat_quaternion[ 3 ] = quat_souhaite.x
-    mat_quaternion[ 4 ] = quat_souhaite.y
-    mat_quaternion[ 5 ] = quat_souhaite.z
-    mat_quaternion[ 6 ] = quat_souhaite.w
-
-    return mat_quaternion
-
-# Faire une pose à partir d'une position et d'une orientation
-def poseFromPointQuat ( point, quat ):
-    
-    mat = np.zeros( 7 )
-    mat[ 0 ] = point.x
-    mat[ 1 ] = point.y
-    mat[ 2 ] = point.z
-    mat[ 3 ] = quat.x
-    mat[ 4 ] = quat.y
-    mat[ 5 ] = quat.z
-    mat[ 6 ] = quat.w
-
-    return mat
-    
-
-# Return the sum of two points
-def addPoints ( point1, point2 ):
-    
-    return Point ( point1.x + point2.x,
-                    point1.y + point2.y,
-                    point1.z + point2.z )
-
-# Return a matrix that describes the pose
-def matriceFromPose ( pose ):
-    
-    matrice = np.zeros ( 7 )
-    
-    matrice[0] = pose.position.x
-    matrice[1] = pose.position.y
-    matrice[2] = pose.position.z
-    matrice[3] = pose.orientation.x
-    matrice[4] = pose.orientation.y
-    matrice[5] = pose.orientation.z
-    matrice[6] = pose.orientation.w
-
-    return matrice
-
-# Returns a vec3 from a point
-def vec3FromPoint ( point ):
-    
-    return vec3 ( point.x,
-                    point.y,
-                    point.z )
-
-# Returns a point from a vec3
-def pointFromVec3 ( vec3 ):
-    
-    return Point ( vec3.x,
-                    vec3.y,
-                    vec3.z )
-
-# Returns the vector [AB]
-def vec3FromPoints ( B, A ):
-    
-    return vec3 ( B.x - A.x, B.y - A.y, B.z - A.z )
 
 
 # La fonction main
@@ -111,10 +34,13 @@ def main():
 
     def decalerInstrument ( pos_outil, sens, limb_hndle ):
         # On calcule la matrice de déplacement dans le repère instru
-        dep_instru = vec3 ( 0, 0, - sens * DEPLACEMENT )
+        dep_instru = vec3 ( 0, 0, sens * DEPLACEMENT )
 
         # on l'exprime dans le repère poignet
-        dep_poignet = quatFromOrientation ( rpr_outil.orientation ).rotateVec ( dep_instru )
+        dep_instru = quatFromOrientation ( rpr_outil.orientation ).rotateVec ( dep_instru )
+        
+        # Puis on l'exprime dans le repère cartésien
+        dep_poignet = quatFromOrientation ( limb_hndle.endpoint_pose()['orientation'] ).rotateVec ( dep_instru )
 
         # on additione avec la position actuelle du poignet
         # et paf, ça fait une nouvelle pose
@@ -288,30 +214,18 @@ def main():
 
         return pose_souhaitee
 
-    # Appliquer une demande de nouvelle Pose
-    def appliquerDeplacement ( pose_souhaitee, limb_hndle ):
-
-        iksvc, ns = ik_command.connect_service( limb )
-
-        log ( "Pose actuelle :" )
-        log ( limb_hndle.endpoint_pose() )
-
-        log ( "Nouvelle pose :" )
-        log ( pose_souhaitee )
-
-        # TODO : mettre une boucle d'asservissement ou envoyer en boucle
-        # for x in range ( 0, 5 ):
-        ik_command.service_request(iksvc, pose_souhaitee, limb )
-
-        log ( "Prêt pour de nouvelles aventures !\n" )
-
-        return
-
-    
-    
+  
     #
     #					*** Callbacks ***
     #
+    
+    # Fait une pause pendant 3 secondes
+    def stopCallback ( msg ):
+        
+        rospy.sleep ( 3 )
+
+        output ( stop )
+        
 
     # Calcule et effectue un déplacement
     def deplacement ( commande ):
@@ -325,11 +239,13 @@ def main():
 
             limb_hndle = baxter_interface.Limb( limb )
 
-            appliquerDeplacement ( calculerDeplacement ( axe_nb, sens, limb_hndle ), limb_hndle )
+            asservirPoignet ( calculerDeplacement ( axe_nb, sens, limb_hndle ), limb, limb_hndle )
+
+            output ( commande )
         
         else:
             
-            log ( "Pas de centre de trocart actuellement, impossible de se déplacer en sécurité." )
+            output ( "No trocart is set" )
             sys.stdout.flush()
 
     # Met à jour la position du trocart 
@@ -375,8 +291,9 @@ def main():
     limb = 'right'
 
     trocart_sub = rospy.Subscriber( 'api_rob4/config/ctr_trocart', Point, setTrocartCallback )
-    cmd_sub = rospy.Subscriber( 'api_rob4/commande', Deplacement, deplacement )
+    cmd_sub = rospy.Subscriber( TOPIC_DEPLACEMENT, Deplacement, deplacement )
     outil_sub = rospy.Subscriber( 'api_rob4/config/rpr_outil', Pose, setOutilCallback )
+    stop_sub = rospy.Subscriber ( TOPIC_STOP, String, stopCallback )
 
     boucle ( limb )
 

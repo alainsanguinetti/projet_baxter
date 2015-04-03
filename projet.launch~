@@ -46,8 +46,17 @@
         pkg="projet_rob4"
         type="commande_clavier.py"
         name="commande_clavier" >
-        output="screen"
-        launch-prefix="gnome-terminal -command">
+        output="screen" >
     </node>
+
+<!--
+    <node name="uvc_camera" pkg="libuvc_camera" type="camera_node">
+        <param name="device" value="/dev/video0" /> <!-- Peut etre a changer ! -->
+        <param name="fps" value="5" />
+        <param name="width" value="1024" />
+        <param name="height" value="860" />
+        <param name="frame_id" value="central" />
+    </node>
+-->
 
 </launch>

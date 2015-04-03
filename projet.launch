@@ -49,4 +49,14 @@
         output="screen" >
     </node>
 
+<!--
+    <node name="uvc_camera" pkg="libuvc_camera" type="camera_node">
+        <param name="device" value="/dev/video0" />
+        <param name="fps" value="5" />
+        <param name="width" value="1024" />
+        <param name="height" value="860" />
+        <param name="frame_id" value="central" />
+    </node>
+-->
+
 </launch>
