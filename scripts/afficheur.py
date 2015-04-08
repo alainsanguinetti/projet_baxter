@@ -10,8 +10,8 @@ import rospy
 import numpy as np
 
 import cv
-import cv_bridge
 import PIL
+import cv_bridge
 
 import roslib
 #import baxter_interface
@@ -32,14 +32,13 @@ from std_msgs.msg import String
 
 from chaines import *
 
-
+my_text = " abc "
 
 def main():
 
     POS_x = 60
     POS_y = 10
     TEXT_size = 60
-    text = "  "
 
     ## http://sdk.rethinkrobotics.com/wiki/Demo_Mode_-_Code_Walkthrough 
     def gen_cv(img):
@@ -56,6 +55,9 @@ def main():
 
     def cv_to_msg(img):
         return cv_bridge.CvBridge().cv_to_imgmsg(img, encoding='bgr8')
+
+    def cv2_to_msg ( img ):
+        return cv_bridge.CvBridge().cv2_to_imgmsg( img, encoding='bgr8')
 
     def msg_to_cv(img):
         return cv_bridge.CvBridge().imgmsg_to_cv2(img, desired_encoding='bgr8')
@@ -83,42 +85,50 @@ def main():
         return cv_to_msg(tmp)
     ##
 
-    def republish(imagemsg):
+    def my_overlay ( img_1, img_2 ):
 
-        # On récupère l'image actuelle
-        
-        # L'image de fond
-        cam_img = msg_to_cv ( imagemsg )
+        s_img = img_1
+        l_img = img_2
+        x_offset=y_offset=0
+        l_img[y_offset:y_offset+s_img.shape[0], x_offset:x_offset+s_img.shape[1]] = s_img
+
+        return cv2_to_msg ( l_img )
+
+    def img_from_txt ( text ):
 
         # On prépare le texte
-        image = Image.new("RGB", (500,100), (255,255,255))
+        image = Image.new("RGB", (1024,600), (255,255,255))
         usr_font = ImageFont.truetype("/home/baxter/ros_ws/src/projet_rob4/resources/fonts/Aller_Rg.ttf", TEXT_size)
         d_usr = ImageDraw.Draw(image)
         d_usr = d_usr.text((POS_x,POS_y), text, (0,0,0), font=usr_font)
 
-        txt_msg = gen_cv ( image )
+        return gen_cv ( image )
 
-        msg = overlay ( cam_img, txt_msg, 0, 0 )
+    def republish(imagemsg):
+
+        # Superposer l'image texte
+        msg3 = my_overlay ( msg_to_cv ( cv_to_msg( img_from_txt ( my_text ) ) ) , msg_to_cv(imagemsg) )
 
         """
             Sends the camera image to baxter's display
-        """        
-        display_pub.publish(msg)
+        """
+        display_pub.publish(msg3)
+        rospy.sleep(0.1)
+
 
     # Met à jour le texte à afficher
     def texteCallback ( msg ):
-
-        text = msg.data
-
+        global my_text
+        my_text = msg.data
 
     rospy.init_node('afficheur')      
 
     # Lis les messages sur le flux rob4/out et les affiche à l'écran
-    out_sub = rospy.Subscriber ( TOPIC_OUT, String, texteCallback )
+    out_sub = rospy.Subscriber ( TOPIC_OUT, String, texteCallback, None, 1 )
     cam_sub = rospy.Subscriber( "image_raw", ImageMsg, republish, None, 1)
-    pub = rospy.Publisher('/robot/xdisplay', ImageMsg, queue_size=1) 
-
+    display_pub = rospy.Publisher('/robot/xdisplay', ImageMsg, queue_size=1) 
+    
     rospy.spin()
 
 if __name__ == '__main__':
-	main()
+    main()

@@ -221,10 +221,10 @@ def main():
     
     # Fait une pause pendant 3 secondes
     def stopCallback ( msg ):
+
+        output ( CMD_STOP )
         
         rospy.sleep ( 3 )
-
-        output ( stop )
         
 
     # Calcule et effectue un déplacement
@@ -257,7 +257,7 @@ def main():
         global trocartIsSet
         trocartIsSet = True
 
-        output ( "Centre du trocart mis à jour" )
+        output ( "Trocart updated" )
 
         return
 
