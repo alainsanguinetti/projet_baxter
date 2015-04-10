@@ -5,6 +5,8 @@ import rospy
 import numpy as np
 import ik_command
 
+import baxter_interface
+
 from std_msgs.msg import String
 from geometry_msgs.msg  import Point
 from geometry_msgs.msg  import Pose
@@ -14,6 +16,7 @@ from cgkit.cgtypes      import * # Pour les quaternions
 # Nos fichiers communs
 from chaines import *
 from valeurs import *
+import instru
 
 # Le topic pour afficher sur l'écran de Baxter
 output_pub = rospy.Publisher ( TOPIC_OUT, String )
@@ -26,10 +29,17 @@ stop_pub = rospy.Publisher ( TOPIC_STOP, String )
 # #				Log et prints                                  
 # #
 # ######################################################################
+# Convert any python arg to its string representation
+def convert_to_string ( obj_or_str ):
+    if isinstance ( obj_or_str, basestring ):
+        return obj_or_str.encode('utf8')
+    else:
+        return str ( obj_or_str ).encode ( 'utf8' )
 
 # Publish something on baxter's screen
 def output ( txt ):
-    output_msg = String ( txt )
+    string = convert_to_string ( txt )
+    output_msg = String ( string )
     out_pub = rospy.Publisher ( 'rob4/out', String )
     output_pub.publish ( output_msg )
 
@@ -37,10 +47,7 @@ def output ( txt ):
 # Print something ( when using roslaunch, it goes into a log )
 def log ( obj_or_str ):
 
-    if isinstance ( obj_or_str, basestring ):
-        print obj_or_str.encode('utf8')
-    else:
-        print str ( obj_or_str ).encode ( 'utf8' )
+    print convert_to_string ( obj_or_str )
 
 
 # ######################################################################
@@ -57,6 +64,10 @@ def quatFromOrientation ( orientation ):
                   orientation.x,
                   orientation.y,
                   orientation.z )
+
+def quaternionFromQuat ( quat ):
+
+    return Quaternion ( quat.x, quat.y, quat.z, quat.w )
 
 # L'inverse de la fonction quatFromOrientation
 def ecrirePose ( quat_souhaite ):
@@ -164,13 +175,15 @@ def erreurFromPoses ( pose, pose_actu ):
 # Asservir la position du poignet à l'aide d'un intégrateur
 def asservirPoignet ( pose, limb, limb_hndle ):
     
-    KI = 0.1
+    KI = 0.5
     pose_souhaitee = pose
 
     i=0
 
     # On fait au max 10 essais
-    while i < 10:
+    while i < 20:
+        
+        output ( "Essai " + str ( i ) )
         # On déplace le poignet - avec la pose souhaitée
         appliquerDeplacement ( pose_souhaitee, limb, limb_hndle )
 
@@ -181,11 +194,11 @@ def asservirPoignet ( pose, limb, limb_hndle ):
         pose_erreur = erreurFromPoses ( pose, pose_actu )
         
         # Si l'erreur est suffisamment faible, on s'arrête
-        if ( np.linalg.norm ( pose_erreur ) < ( 0.5 * DEPLACEMENT ) ):
+        if ( np.linalg.norm ( pose_erreur ) < ( 0.2 * DEPLACEMENT ) ):
             
             break
         
-        # Sinon, on ajoute une proportion de l'erreur à la commande
+        # Sinon, on ajoute une proportion de l'erreur à la commande ( on peut limiter la norme du déplacement max demandé )
         else:
             
             pose_souhaitee = pose_souhaitee + KI * pose_erreur
@@ -204,3 +217,52 @@ def asservirPoignet ( pose, limb, limb_hndle ):
 def envoyerStop():
         
         stop_pub.publish ( String ( ) )
+
+# ######################################################################
+# #
+# #				Lecture de la pose de l'instrument                                  
+# #
+# ######################################################################
+
+rpr_instru = Pose ()
+instru.rpr = Pose()
+
+# Met à jour le repère instrument
+def setInstruCallback ( rpr ):
+
+    instru.rpr = rpr
+
+instru_sub = rospy.Subscriber ( TOPIC_RPR_INSTRU, Pose, setInstruCallback )
+
+# Renvoie une Pose contenant la position et l'orientation de l'outil dans le repère monde
+def pose_instrument ( ):
+
+    limb_hndle = baxter_interface.Limb ( BAXTER_USED_LIMB )
+
+    # Position du poignet
+    position = limb_hndle.endpoint_pose()[ 'position' ]
+    position_poignet = Point ( position.x, position.y, position.z )
+
+    # Decalage outil ( repère poignet ) exprimé dans le repère cartésien
+    decalage_outil = pointFromVec3 ( 
+                        quatFromOrientation( 
+                            limb_hndle.endpoint_pose()['orientation'] 
+                            )
+    #                    .inverse ()
+                        .rotateVec ( 
+                            vec3FromPoint ( instru.rpr.position ) 
+                            )
+                        )
+
+    position = addPoints ( position_poignet, decalage_outil )
+
+    orientation = quaternionFromQuat ( 
+                                        quatFromOrientation ( instru.rpr.orientation ) * 
+                                        quatFromOrientation ( limb_hndle.endpoint_pose()['orientation'] )
+                                    )
+
+    return Pose ( position, orientation )
+
+    
+
+

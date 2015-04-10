@@ -21,11 +21,11 @@ from geometry_msgs.msg  import Quaternion
 from utils import *	
 from chaines import *
 from valeurs import *
+import instru
 
 
 ctr_trocart = Point ()  # Variables globales
 trocartIsSet = False
-rpr_outil = Pose ()
 limb = ''
 
 
@@ -37,7 +37,7 @@ def main():
         dep_instru = vec3 ( 0, 0, sens * DEPLACEMENT )
 
         # on l'exprime dans le repère poignet
-        dep_instru = quatFromOrientation ( rpr_outil.orientation ).rotateVec ( dep_instru )
+        dep_instru = quatFromOrientation ( instru.rpr.orientation ).rotateVec ( dep_instru )
         
         # Puis on l'exprime dans le repère cartésien
         dep_poignet = quatFromOrientation ( limb_hndle.endpoint_pose()['orientation'] ).rotateVec ( dep_instru )
@@ -80,7 +80,7 @@ def main():
         decalage_outil = pointFromVec3 ( 
                             quat_souhaite
                             .rotateVec ( 
-                                vec3FromPoint ( rpr_outil.position ) 
+                                vec3FromPoint ( instru.rpr.position ) 
                                 )
                             )
 
@@ -109,7 +109,7 @@ def main():
         log (vect_deplacement_local)
 
         # exprimer le déplacement dans le repère poignet
-        quat_outil_poignet = quatFromOrientation ( rpr_outil.orientation )
+        quat_outil_poignet = quatFromOrientation ( instru.rpr.orientation )
         vect_deplacement_poignet = quat_outil_poignet.rotateVec( vect_deplacement_local )
         log("Vecteur du déplacement dans le repère poignet")
         log( vect_deplacement_poignet )
@@ -154,7 +154,7 @@ def main():
                             pointFromVec3 (
                                 sens * 
                                 vec3FromPoint ( 
-                                    rpr_outil.position
+                                    instru.rpr.position
                                 ).length() *
                                 vect_outil_trocart)
                             )
@@ -165,6 +165,9 @@ def main():
 
     # Donne la position actuelle du point piloté de l'outil dans le repère cartésien du robot
     def recupererPositionOutil ( limb_hndle ):
+
+        print "Repere de l'outil"
+        print instru.rpr.position
         
         # Position du poignet
         position = limb_hndle.endpoint_pose()[ 'position' ]
@@ -177,7 +180,7 @@ def main():
                                 )
         #                    .inverse ()
                             .rotateVec ( 
-                                vec3FromPoint ( rpr_outil.position ) 
+                                vec3FromPoint ( instru.rpr.position ) 
                                 )
                             )
 
@@ -234,6 +237,8 @@ def main():
     
         if trocartIsSet :
 
+            output ( commande )
+
             axe_nb = commande.axe
             sens = commande.sens
 
@@ -241,11 +246,11 @@ def main():
 
             asservirPoignet ( calculerDeplacement ( axe_nb, sens, limb_hndle ), limb, limb_hndle )
 
-            output ( commande )
+            output ( BAXTER_READY )
         
         else:
             
-            output ( "No trocart is set" )
+            output ( BAXTER_NO_TROCAR )
             sys.stdout.flush()
 
     # Met à jour la position du trocart 
@@ -260,15 +265,6 @@ def main():
         output ( "Trocart updated" )
 
         return
-
-    # Met à jour le repère d'outil
-    def setOutilCallback ( new_rpr ):
-        
-        global rpr_outil
-        rpr_outil = new_rpr
-
-        log( "Repere d'outil mis à jour" )
-        sys.stdout.flush ()
 
     #
     #           *** La boucle d'écoute principale, on ne s'occupe pas des caractères entrés au clavier car on est dans un roslaunch ***
@@ -285,14 +281,14 @@ def main():
     #
     #           *** Lancement de la commande ***
     #
-    rospy.init_node('calculateur_rpr_outil')
+    rospy.init_node('calculateur')
 
     global limb
     limb = 'right'
 
-    trocart_sub = rospy.Subscriber( 'api_rob4/config/ctr_trocart', Point, setTrocartCallback )
+
+    trocart_sub = rospy.Subscriber( TOPIC_CTR_TROCART, Point, setTrocartCallback )
     cmd_sub = rospy.Subscriber( TOPIC_DEPLACEMENT, Deplacement, deplacement )
-    outil_sub = rospy.Subscriber( 'api_rob4/config/rpr_outil', Pose, setOutilCallback )
     stop_sub = rospy.Subscriber ( TOPIC_STOP, String, stopCallback )
 
     boucle ( limb )
