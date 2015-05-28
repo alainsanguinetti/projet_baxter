@@ -8,11 +8,12 @@ import baxter_external_devices
 import numpy as np
 
 import sys
+import signal
 
 from math import pi
 
 from cgkit.cgtypes      import * # Pour les quaternions et vec3
-from test_rob4.msg      import Deplacement
+from projet_rob4.msg    import Deplacement
 from geometry_msgs.msg  import Point
 from geometry_msgs.msg  import Pose
 from geometry_msgs.msg  import Quaternion
@@ -35,9 +36,6 @@ def main():
     def decalerInstrument ( pos_outil, sens, limb_hndle ):
         # On calcule la matrice de déplacement dans le repère instru
         dep_instru = vec3 ( 0, 0, sens * DEPLACEMENT )
-
-        # on l'exprime dans le repère poignet
-        dep_instru = quatFromOrientation ( instru.rpr.orientation ).rotateVec ( dep_instru )
         
         # Puis on l'exprime dans le repère cartésien
         dep_poignet = quatFromOrientation ( limb_hndle.endpoint_pose()['orientation'] ).rotateVec ( dep_instru )
@@ -47,7 +45,7 @@ def main():
         orientation = limb_hndle.endpoint_pose()['orientation']
         position = addPoints ( limb_hndle.endpoint_pose()['position'], pointFromVec3 ( dep_poignet ) )
 
-        log ( "On décale l'instrument" )
+        # log ( "On décale l'instrument" )
 
         return poseFromPointQuat( position, orientation ) 
                             
@@ -75,26 +73,11 @@ def main():
                             limb_hndle.endpoint_pose()['orientation']
                         )
 
-        # Calcul de la nouvelle position
-        # Decalage outil ( repère poignet ) exprimé dans le repère cartésien
-        decalage_outil = pointFromVec3 ( 
-                            quat_souhaite
-                            .rotateVec ( 
-                                vec3FromPoint ( instru.rpr.position ) 
-                                )
-                            )
-
-        # La nouvelle position est la suivante :
-        position_souhaitee = addPoints ( pos_outil_f, Point ( 
-                                                        - decalage_outil.x,
-                                                        - decalage_outil.y,
-                                                        - decalage_outil.z
-                                                        )
-                                        )                  
+                
 
 
 
-        return poseFromPointQuat ( position_souhaitee, quat_souhaite )
+        return poseFromPointQuat ( pos_outil_f, quat_souhaite )
 
 
     # Calcule la position cartésienne future de l'outil
@@ -105,14 +88,11 @@ def main():
         mat_deplacement_loc[ axe_nb ] += sens * DEPLACEMENT
         vect_deplacement_local = vec3 ( mat_deplacement_loc )
 
-        log ("Vecteur du déplacement local")
-        log (vect_deplacement_local)
+        # log ("Vecteur du déplacement local")
+        # log (vect_deplacement_local)
 
-        # exprimer le déplacement dans le repère poignet
-        quat_outil_poignet = quatFromOrientation ( instru.rpr.orientation )
-        vect_deplacement_poignet = quat_outil_poignet.rotateVec( vect_deplacement_local )
-        log("Vecteur du déplacement dans le repère poignet")
-        log( vect_deplacement_poignet )
+        # exprimer le déplacement dans le repère poignet ( plus besoin )
+        vect_deplacement_poignet = vect_deplacement_local
 
         # exprimer le déplacement dans le repère cartésien
         quat_poignet_monde = quatFromOrientation ( limb_hndle.endpoint_pose()[ 'orientation' ] )
@@ -120,54 +100,13 @@ def main():
         point_dep_cart = Point ( vect_deplacement_cart.x,
                                     vect_deplacement_cart.y,
                                     vect_deplacement_cart.z )
-        log ( "Vecteur du déplacement dans le repère cartésien" )
-        log ( vect_deplacement_cart )
+        # log ( "Vecteur du déplacement dans le repère cartésien" )
+        # log ( vect_deplacement_cart )
 
         return addPoints ( point_dep_cart, pos_outil )
     
-    # Calcule la position future du poignet
-    def positionFuturePoignet ( pos_outil, pos_outil_f, limb_hndle ):
-        
-        # Vecteur outil-trocart
-        vect_outil_trocart = vec3 ( ctr_trocart.x - pos_outil.x, 
-                                    ctr_trocart.y - pos_outil.y,
-                                    ctr_trocart.z - pos_outil.z )
-
-        # Vecteur poignet-trocart
-        pos_poignet = limb_hndle.endpoint_pose()[ 'position' ]
-        vect_poignet_trocart = vec3 ( ctr_trocart.x - pos_poignet.x,
-                                        ctr_trocart.y - pos_poignet.y,
-                                        ctr_trocart.z - pos_poignet.z )
-
-        # position par rapport au trocart ( dedans / dehors )
-        # TODO
-        sens = -1
-
-        # position du poignet future
-        vect_outil_trocart = vec3FromPoints ( 
-                                ctr_trocart, 
-                                pos_outil_f 
-                                ).normalize()
-
-        pos_poignet_f = addPoints ( 
-                            pos_outil_f,
-                            pointFromVec3 (
-                                sens * 
-                                vec3FromPoint ( 
-                                    instru.rpr.position
-                                ).length() *
-                                vect_outil_trocart)
-                            )
-                        
-
-        return pos_poignet_f
-        
-
     # Donne la position actuelle du point piloté de l'outil dans le repère cartésien du robot
     def recupererPositionOutil ( limb_hndle ):
-
-        print "Repere de l'outil"
-        print instru.rpr.position
         
         # Position du poignet
         position = limb_hndle.endpoint_pose()[ 'position' ]
@@ -184,12 +123,12 @@ def main():
                                 )
                             )
 
-        log ( "Décalage de l'outil exprimé dans le repère cartésien" )
-        log ( decalage_outil )
+        # log ( "Décalage de l'outil exprimé dans le repère cartésien" )
+        # log ( decalage_outil )
 
         position_outil = addPoints ( position_poignet, decalage_outil )
-        log ( "Position de l'outil actuelle dans le repère cartésien" )
-        log ( position_outil )
+        # log ( "Position de l'outil actuelle dans le repère cartésien" )
+        # log ( position_outil )
 
         return position_outil
 
@@ -233,7 +172,7 @@ def main():
     # Calcule et effectue un déplacement
     def deplacement ( commande ):
 
-        log ("Demande de déplacement reçue")
+        # log ("Demande de déplacement reçue")
     
         if trocartIsSet :
 
@@ -283,17 +222,21 @@ def main():
     #
     rospy.init_node('calculateur')
 
-    global limb
-    limb = 'right'
+    # Callback pour le signal SIGINT
+    def signal_handler(signal, frame):
+        print('Exiting')
+        sys.exit(0)
+    # Definition du callback pour le signal SIGINT
+    signal.signal(signal.SIGINT, signal_handler)
 
+    global limb
+    limb = BRAS_UTILISE
 
     trocart_sub = rospy.Subscriber( TOPIC_CTR_TROCART, Point, setTrocartCallback )
     cmd_sub = rospy.Subscriber( TOPIC_DEPLACEMENT, Deplacement, deplacement )
     stop_sub = rospy.Subscriber ( TOPIC_STOP, String, stopCallback )
 
     boucle ( limb )
-
-
 
 if __name__ == '__main__':
     main()

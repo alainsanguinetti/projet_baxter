@@ -7,7 +7,9 @@ import ik_command
 
 import baxter_interface
 
-from std_msgs.msg import String
+from std_msgs.msg       import String
+from std_msgs.msg       import Bool
+
 from geometry_msgs.msg  import Point
 from geometry_msgs.msg  import Pose
 from geometry_msgs.msg  import Quaternion
@@ -19,14 +21,18 @@ from valeurs import *
 import instru
 
 # Le topic pour afficher sur l'écran de Baxter
-output_pub = rospy.Publisher ( TOPIC_OUT, String )
+output_pub = rospy.Publisher ( TOPIC_OUT, String, queue_size=1 )
+
+# Le topic pour hocher la tête
+nod_pub = rospy.Publisher ( TOPIC_HEAD_NOD, Bool, queue_size=2 )
+
 # Le topic de stop
 stop_pub = rospy.Publisher ( TOPIC_STOP, String )
 
 
 # ######################################################################
 # #
-# #				Log et prints                                  
+# #				Logs, prints, nod ;-)                                
 # #
 # ######################################################################
 # Convert any python arg to its string representation
@@ -48,6 +54,15 @@ def output ( txt ):
 def log ( obj_or_str ):
 
     print convert_to_string ( obj_or_str )
+
+
+# Baxter nods its head
+def baxter_nod ( ):
+
+    msg = Bool ( True )
+    nod_pub.publish ( msg )
+    rospy.sleep(0.5)
+    nod_pub.publish ( msg )
 
 
 # ######################################################################
@@ -166,7 +181,7 @@ def erreurFromPoses ( pose, pose_actu ):
     # on renvoie une matrice
     erreur = pose - pose_actu
 
-    log ( "MAtrice d'erreur de position" )
+    log ( "Matrice d'erreur de position" )
     log ( erreur )
 
     return erreur
@@ -175,20 +190,22 @@ def erreurFromPoses ( pose, pose_actu ):
 # Asservir la position du poignet à l'aide d'un intégrateur
 def asservirPoignet ( pose, limb, limb_hndle ):
     
-    KI = 0.5
+    KI = 0.2
     pose_souhaitee = pose
 
     i=0
 
-    # On fait au max 10 essais
-    while i < 20:
+    # On fait au max n essais
+    while i < 3:
         
         output ( "Essai " + str ( i ) )
         # On déplace le poignet - avec la pose souhaitée
         appliquerDeplacement ( pose_souhaitee, limb, limb_hndle )
 
         # On mesure la pose atteinte
-        pose_actu = Pose ( limb_hndle.endpoint_pose()[ 'position' ], limb_hndle.endpoint_pose()[ 'orientation' ] )
+        pose_actu = Pose ( 
+            limb_hndle.endpoint_pose()[ 'position' ], 
+            limb_hndle.endpoint_pose()[ 'orientation' ] )
         
         # On calcule l'erreur - entre la commande et la position actuelle
         pose_erreur = erreurFromPoses ( pose, pose_actu )
@@ -197,8 +214,14 @@ def asservirPoignet ( pose, limb, limb_hndle ):
         if ( np.linalg.norm ( pose_erreur ) < ( 0.2 * DEPLACEMENT ) ):
             
             break
+
+        # Si elle est beaucoup trop grande, on s'arrête aussi 
+        # car cela signifie qu'on essaye de bouger le robot
+        elif ( np.linalg.norm ( pose_erreur ) > 2 * DEPLACEMENT ):
+            
+            break 
         
-        # Sinon, on ajoute une proportion de l'erreur à la commande ( on peut limiter la norme du déplacement max demandé )
+        # Sinon, on ajoute une proportion de l'erreur à la commande
         else:
             
             pose_souhaitee = pose_souhaitee + KI * pose_erreur
@@ -220,7 +243,7 @@ def envoyerStop():
 
 # ######################################################################
 # #
-# #				Lecture de la pose de l'instrument                                  
+# #				Lecture de la pose de l'instrument ! ne pas utiliser !                          
 # #
 # ######################################################################
 

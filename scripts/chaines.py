@@ -1,10 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf8 -*-
 
+# Alain Sanguinetti 2015-05-06
+
 #
 # Ce fichier définit les chaines de caractères utilisées dans le projet 
 # Baxter de Sara, Eder, Alain
 #
+
+#
+#     *** Bras utilisé ***
+#
+BRAS_UTILISE = "right"
 
 #
 #     *** Topics ***
@@ -14,17 +21,21 @@ TOPIC_BASE_NAMESPACE = "rob4/"
 TOPIC_CONFIG_NAMESPACE	= TOPIC_BASE_NAMESPACE + "config/"
 
 TOPIC_CTR_TROCART 		= TOPIC_CONFIG_NAMESPACE + "ctr_trocart"
-TOPIC_RPR_OUTIL			= TOPIC_CONFIG_NAMESPACE + "rpr_outil"
+# -- Obsolète
+TOPIC_RPR_OUTIL     	= TOPIC_CONFIG_NAMESPACE + "rpr_outil"
+# --
 
 TOPIC_OUT				= TOPIC_BASE_NAMESPACE + "out"
 
 TOPIC_STOP				= TOPIC_BASE_NAMESPACE + "stop"
 
+TOPIC_HEAD_NOD          = "/robot/head/command_head_nod"
+
 TOPIC_CMD_TXT 			= TOPIC_BASE_NAMESPACE + "cmd_txt"
 TOPIC_DEPLACEMENT 		= TOPIC_BASE_NAMESPACE + "deplacement"
 
 TOPIC_RPR_INSTRU        = TOPIC_CONFIG_NAMESPACE + "rpr_instru"
-TOPIC_INSTRU            = TOPIC_BASE_NAMESPACE + "instru_pose"
+TOPIC_INSTRU            = TOPIC_BASE_NAMESPACE + "instru"
 
 
 #
@@ -38,6 +49,15 @@ CMD_IN		= "IN"
 CMD_OUT		= "OUT"
 
 CMD_STOP 	= "STOP"
+
+CMD_CONF    = "CONFIGURATION"
+CMD_INSTRU  = "INSTRUMENT"
+CMD_INSTRU_1    = "UN"
+CMD_INSTRU_2    = "DEUX"
+CMD_INSTRU_3    = "TROIS"
+CMD_INSTRU_0    = "ZERO"
+
+CMD_TROCART     = "TROCAR"
 
 #
 #     *** Messages ***
@@ -57,3 +77,13 @@ deplacement_bindings = {
 	CMD_IN		: ( [ 2, +2 ] ), # IN
 	CMD_OUT		: ( [ 2, -4 ] )  # OUT
 }
+
+#
+#    *** Codes ***
+#
+CODE_NO_INSTRU = 0
+
+#
+#    *** End Effector ***
+#
+EFFECTOR_ID = 131073

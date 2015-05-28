@@ -1,0 +1,62 @@
+
+rostopic pub -1 /robot/end_effector/right_gripper/command baxter_core_msgs/EndEffectorCommand '{ id : 131073,  command : "configure", args : "{ \"urdf\":{             \"name\": \"right_electric_gripper\",            \"joint\": [                 { \"name\": \"right_hand\" },                { \"name\": \"right_gripper_base\", \"origin\": { \"xyz\": [0.0, 0.0, 0.0] } }            ]         }    }"}'
+
+
+pose: 
+  position: 
+    x: 0.762104432544
+    y: -0.0366625412671
+    z: 0.180876699614
+  orientation: 
+    x: 0.714618939171
+    y: -0.698856857778
+    z: -0.0154634126893
+    w: -0.0260719577963
+
+pose: 
+  position: 
+    x: 0.762723232112
+    y: -0.0363039147659
+    z: 0.181174671328
+  orientation: 
+    x: -0.494507190413
+    y: 0.475336074489
+    z: 0.51587201638
+    w: 0.513219560846
+
+    # Calcule la position future du poignet
+    def positionFuturePoignet ( pos_outil, pos_outil_f, limb_hndle ):
+        
+        # Vecteur outil-trocart
+        vect_outil_trocart = vec3 ( ctr_trocart.x - pos_outil.x, 
+                                    ctr_trocart.y - pos_outil.y,
+                                    ctr_trocart.z - pos_outil.z )
+
+        # Vecteur poignet-trocart
+        pos_poignet = limb_hndle.endpoint_pose()[ 'position' ]
+        vect_poignet_trocart = vec3 ( ctr_trocart.x - pos_poignet.x,
+                                        ctr_trocart.y - pos_poignet.y,
+                                        ctr_trocart.z - pos_poignet.z )
+
+        # position par rapport au trocart ( dedans / dehors )
+        # TODO
+        sens = -1
+
+        # position du poignet future
+        vect_outil_trocart = vec3FromPoints ( 
+                                ctr_trocart, 
+                                pos_outil_f 
+                                ).normalize()
+
+        pos_poignet_f = addPoints ( 
+                            pos_outil_f,
+                            pointFromVec3 (
+                                sens * 
+                                vec3FromPoint ( 
+                                    instru.rpr.position
+                                ).length() *
+                                vect_outil_trocart)
+                            )
+                        
+
+        return pos_poignet_f

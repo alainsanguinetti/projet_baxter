@@ -31,6 +31,7 @@ from sensor_msgs.msg import (
 from std_msgs.msg import String
 
 from chaines import *
+from utils import *
 
 def main():
 
@@ -65,6 +66,8 @@ def main():
     # Met à jour le texte à afficher
     def texteCallback ( msg ):
         global my_text
+
+        log ( msg.data )
         my_text = msg.data
 
     rospy.init_node('afficheur')      

@@ -1,0 +1,26 @@
+#!/usr/bin/python
+# -*- coding: utf8 -*-
+# Alain Sanguinetti 2015-05-15
+# Permet de choisir un réglage de position d'instrument parmi les 3 positions possibles
+
+from __future__ import unicode_literals
+
+import rospy
+import baxter_interface
+import baxter_external_devices
+import numpy as np
+
+import sys
+
+from math import pi
+
+from cgkit.cgtypes import * # Pour les quaternions
+from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Point
+from geometry_msgs.msg import Quaternion
+
+from baxter_core_msgs.msg import EndEffectorCommand
+
+# Nos librairies et fonctions de configuration
+from chaines import *
+from valeurs import *

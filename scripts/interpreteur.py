@@ -14,6 +14,10 @@ from chaines import *
 from valeurs import *
 
 from projet_rob4.msg import Deplacement
+from projet_rob4.msg import Instrument
+
+# La calibration de Sarah
+from calibration import calibration
 
 def main ( ):
     
@@ -24,6 +28,33 @@ def main ( ):
         deplacement_message.axe = parametres[ 0 ]
         deplacement_message.sens = parametres[ 1 ]
         cmd_pub.publish ( deplacement_message )
+
+
+    # Possibilités de configuration du robot
+    def configurationRobot ( commandes ):
+
+        if ( commandes[ 1 ] == CMD_INSTRU ):
+
+            msg = Instrument()
+            
+            if ( commandes[ 2 ] == CMD_INSTRU_1 ):
+                code = 1
+            elif ( commandes[ 2 ] == CMD_INSTRU_2 ):
+                code = 2
+            elif ( commandes[ 2 ] == CMD_INSTRU_3 ):
+                code = 3
+            else:
+                code = CODE_NO_INSTRU
+            
+            msg.code_orientation = code
+
+            instru_pub.publish ( msg )
+
+        elif ( commandes[ 1 ] == CMD_TROCART ):
+
+            calibration( baxter_interface.Limb( BRAS_UTILISE ) )
+
+            output ( "Calibration terminee" )
         
     
     #
@@ -42,7 +73,9 @@ def main ( ):
                 
                 envoyerDeplacement ( commandes )
             
-            #elif commandes[ 0 ] in reglages_bindings:
+            elif commandes[ 0 ] == CMD_CONF:
+
+                configurationRobot ( commandes )
             
             elif commandes[ 0 ] == CMD_STOP:
                 
@@ -59,6 +92,7 @@ def main ( ):
     cmd_txt_sub = rospy.Subscriber ( TOPIC_CMD_TXT, String, commandeCallback )
     
     cmd_pub = rospy.Publisher ( TOPIC_DEPLACEMENT, Deplacement )
+    instru_pub = rospy.Publisher ( TOPIC_INSTRU, Instrument )
 
     rospy.spin()
 

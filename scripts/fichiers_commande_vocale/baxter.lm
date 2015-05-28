@@ -1,0 +1,69 @@
+Language model created by QuickLM on Thu May 21 08:50:09 EDT 2015
+Copyright (c) 1996-2010 Carnegie Mellon University and Alexander I. Rudnicky
+
+The model is in standard ARPA format, designed by Doug Paul while he was at MITRE.
+
+The code that was used to produce this language model is available in Open Source.
+Please visit http://www.speech.cs.cmu.edu/tools/ for more information
+
+The (fixed) discount mass is 0.5. The backoffs are computed using the ratio method.
+This model based on a corpus of 11 sentences and 13 words
+
+\data\
+ngram 1=13
+ngram 2=22
+ngram 3=11
+
+\1-grams:
+-0.7782 </s> -0.3010
+-0.7782 <s> -0.2218
+-1.8195 BAXTER -0.2218
+-1.8195 DOWN -0.2218
+-1.8195 IN -0.2218
+-1.8195 LEFT -0.2218
+-1.8195 OUT -0.2218
+-1.8195 RIGHT -0.2218
+-1.8195 SETTINGS -0.2218
+-1.8195 SLEEP -0.2218
+-1.8195 STOP -0.2218
+-1.8195 UP -0.2218
+-1.8195 WAKE -0.2218
+
+\2-grams:
+-1.3424 <s> BAXTER 0.0000
+-1.3424 <s> DOWN 0.0000
+-1.3424 <s> IN 0.0000
+-1.3424 <s> LEFT 0.0000
+-1.3424 <s> OUT 0.0000
+-1.3424 <s> RIGHT 0.0000
+-1.3424 <s> SETTINGS 0.0000
+-1.3424 <s> SLEEP 0.0000
+-1.3424 <s> STOP 0.0000
+-1.3424 <s> UP 0.0000
+-1.3424 <s> WAKE 0.0000
+-0.3010 BAXTER </s> -0.3010
+-0.3010 DOWN </s> -0.3010
+-0.3010 IN </s> -0.3010
+-0.3010 LEFT </s> -0.3010
+-0.3010 OUT </s> -0.3010
+-0.3010 RIGHT </s> -0.3010
+-0.3010 SETTINGS </s> -0.3010
+-0.3010 SLEEP </s> -0.3010
+-0.3010 STOP </s> -0.3010
+-0.3010 UP </s> -0.3010
+-0.3010 WAKE </s> -0.3010
+
+\3-grams:
+-0.3010 <s> BAXTER </s>
+-0.3010 <s> DOWN </s>
+-0.3010 <s> IN </s>
+-0.3010 <s> LEFT </s>
+-0.3010 <s> OUT </s>
+-0.3010 <s> RIGHT </s>
+-0.3010 <s> SETTINGS </s>
+-0.3010 <s> SLEEP </s>
+-0.3010 <s> STOP </s>
+-0.3010 <s> UP </s>
+-0.3010 <s> WAKE </s>
+
+\end\
